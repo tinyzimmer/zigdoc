@@ -2,3 +2,5 @@
 zig-out/
 .vscode/
 data/
+dist/
+.intentionally-empty-file.o
