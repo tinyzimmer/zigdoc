@@ -152,3 +152,74 @@ pub fn clone(self: *Self, allocator: std.mem.Allocator, version_override: ?[]con
         .file = file,
     };
 }
+
+test "RemoteSource: parse" {
+    const allocator = std.testing.allocator;
+
+    const case = struct {
+        location: []const u8,
+        expected_source: ?Self = null,
+        expected_error: ?SourceError = null,
+    };
+
+    const test_cases = [_]case{
+        .{
+            .location = "invalid.com/org/repo",
+            .expected_error = SourceError.UnsupportedHost,
+        },
+        .{
+            .location = "github.com/org",
+            .expected_error = SourceError.InvalidPath,
+        },
+        .{
+            .location = "github.com/org/repo",
+            .expected_source = .{
+                .allocator = allocator,
+                .repository = "github.com/org/repo",
+                .version = "latest",
+                .module = "",
+                .file = "index.html",
+            },
+        },
+        .{
+            .location = "github.com/org/repo/module",
+            .expected_source = .{
+                .allocator = allocator,
+                .repository = "github.com/org/repo",
+                .version = "latest",
+                .module = "module",
+                .file = "index.html",
+            },
+        },
+        .{
+            .location = "github.com/org/repo/module/main.js",
+            .expected_source = .{
+                .allocator = allocator,
+                .repository = "github.com/org/repo",
+                .version = "latest",
+                .module = "module",
+                .file = "main.js",
+            },
+        },
+        .{
+            .location = "github.com/org/repo@v1.0.0/module/main.js",
+            .expected_source = .{
+                .allocator = allocator,
+                .repository = "github.com/org/repo",
+                .version = "v1.0.0",
+                .module = "module",
+                .file = "main.js",
+            },
+        },
+    };
+
+    for (test_cases) |tc| {
+        if (tc.expected_error != null) {
+            try std.testing.expectError(tc.expected_error.?, Self.parse(allocator, tc.location));
+        } else {
+            var actual = try Self.parse(allocator, tc.location);
+            defer actual.deinit();
+            try std.testing.expectEqualDeep(tc.expected_source.?, actual);
+        }
+    }
+}

@@ -144,7 +144,7 @@ fn testSleepingJob(self: *Self, job: Job) void {
     self.completeJob(job);
 }
 
-test "WorkerPool" {
+test "WorkerPool: jobs" {
     const allocator = std.testing.allocator;
     var pool = Self.init(allocator);
     var some_int: i64 = 0;
