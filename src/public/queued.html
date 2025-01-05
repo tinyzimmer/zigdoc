@@ -1,0 +1,42 @@
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>{{basename}} - Zig Documentation</title>
+    <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxNTMgMTQwIj48ZyBmaWxsPSIjRjdBNDFEIj48Zz48cG9seWdvbiBwb2ludHM9IjQ2LDIyIDI4LDQ0IDE5LDMwIi8+PHBvbHlnb24gcG9pbnRzPSI0NiwyMiAzMywzMyAyOCw0NCAyMiw0NCAyMiw5NSAzMSw5NSAyMCwxMDAgMTIsMTE3IDAsMTE3IDAsMjIiIHNoYXBlLXJlbmRlcmluZz0iY3Jpc3BFZGdlcyIvPjxwb2x5Z29uIHBvaW50cz0iMzEsOTUgMTIsMTE3IDQsMTA2Ii8+PC9nPjxnPjxwb2x5Z29uIHBvaW50cz0iNTYsMjIgNjIsMzYgMzcsNDQiLz48cG9seWdvbiBwb2ludHM9IjU2LDIyIDExMSwyMiAxMTEsNDQgMzcsNDQgNTYsMzIiIHNoYXBlLXJlbmRlcmluZz0iY3Jpc3BFZGdlcyIvPjxwb2x5Z29uIHBvaW50cz0iMTE2LDk1IDk3LDExNyA5MCwxMDQiLz48cG9seWdvbiBwb2ludHM9IjExNiw5NSAxMDAsMTA0IDk3LDExNyA0MiwxMTcgNDIsOTUiIHNoYXBlLXJlbmRlcmluZz0iY3Jpc3BFZGdlcyIvPjxwb2x5Z29uIHBvaW50cz0iMTUwLDAgNTIsMTE3IDMsMTQwIDEwMSwyMiIvPjwvZz48Zz48cG9seWdvbiBwb2ludHM9IjE0MSwyMiAxNDAsNDAgMTIyLDQ1Ii8+PHBvbHlnb24gcG9pbnRzPSIxNTMsMjIgMTUzLDExNyAxMDYsMTE3IDEyMCwxMDUgMTI1LDk1IDEzMSw5NSAxMzEsNDUgMTIyLDQ1IDEzMiwzNiAxNDEsMjIiIHNoYXBlLXJlbmRlcmluZz0iY3Jpc3BFZGdlcyIvPjxwb2x5Z29uIHBvaW50cz0iMTI1LDk1IDEzMCwxMTAgMTA2LDExNyIvPjwvZz48L2c+PC9zdmc+">
+    <style type="text/css">
+      {{&css}}
+    </style>
+  </head>
+  <body>
+    <nav>
+      <a class="logo" href="#">
+        {{&logo}}
+      </a>
+    </nav>
+    <div id="navWrap">
+        <div id="sectNav" class=""><ul id="listNav"><li><a href="#{{basename}}" class="active">{{basename}}@{{version}}</a></li></ul></div>
+    </div>
+    <section>
+    <div id="sectMain" class="">
+      <h3>Documentation has not been cached yet for <a href="https://{{repo}}">https://{{repo}}</a></h3>
+      <p id="waitText">This page should refresh automatically once it is available, otherwise try refreshing in a few seconds</p>
+    </div>
+  </body>
+  <script>
+    window.onload = function() {
+        const evtSource = new EventSource('/subscribe/{{repo}}@{{version}}');
+        evtSource.addEventListener("ready", (event) => {
+            evtSource.close();
+            setInterval(() => {
+                window.location.reload();
+            }, 3000);
+        });
+        evtSource.onerror = (err) => {
+            evtSource.close();
+            console.log('Event source failed', err);
+            const waitText = document.getElementById('waitText');
+            waitText.innerHTML = 'An error occurred, please try refreshing the page';
+        }
+    }
+  </script>
+</html>
