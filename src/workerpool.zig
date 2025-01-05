@@ -1,9 +1,11 @@
 const std = @import("std");
+
+const RemoteSource = @import("remotesource.zig");
+
 const Allocator = std.mem.Allocator;
 const StringHashMap = std.StringHashMap;
 const Thread = std.Thread;
-
-const RemoteSource = @import("remotesource.zig");
+const Mutex = Thread.Mutex;
 
 const worker_log = std.log.scoped(.worker_pool);
 
@@ -46,24 +48,26 @@ pub const Job = struct {
 const Self = @This();
 
 threads: StringHashMap(Thread) = undefined,
-mutex: Thread.RwLock = undefined,
+mutex: Mutex = Mutex{},
 shutdown: bool = false,
 
 pub fn init(allocator: Allocator) Self {
     return .{
         .threads = StringHashMap(Thread).init(allocator),
-        .mutex = Thread.RwLock{},
     };
 }
 
 pub fn deinit(self: *Self) void {
     self.mutex.lock();
-    defer self.mutex.unlock();
     if (self.shutdown) {
+        self.mutex.unlock();
         return;
     }
     defer self.threads.deinit();
     self.shutdown = true;
+    // We need to unlock the mutex before joining the threads
+    // so that they can remove themselves from the hashmap
+    self.mutex.unlock();
     var it = self.threads.iterator();
     while (it.next()) |kv| {
         const key = kv.key_ptr.*;
@@ -96,7 +100,7 @@ pub fn addJob(self: *Self, job: Job, comptime function: anytype, args: anytype) 
         job.location.repository,
         job.location.version,
     });
-    const thread = Thread.spawn(.{ .allocator = self.threads.allocator }, function, args) catch {
+    const thread = Thread.spawn(.{}, function, args) catch {
         return WorkerError.JobStartFailed;
     };
     errdefer thread.detach();
@@ -113,14 +117,13 @@ pub fn completeJob(self: *Self, job: Job) void {
     if (self.shutdown) {
         return;
     }
-
     worker_log.debug("Completed {s} job for: {s}@{s}", .{
         @tagName(job.job_type),
         job.location.repository,
         job.location.version,
     });
-    const key = job.hashKey(self.threads.allocator) catch {
-        worker_log.err("Failed to hash job key", .{});
+    const key = job.hashKey(self.threads.allocator) catch |err| {
+        worker_log.err("Failed to hash job key: {any}", .{err});
         return;
     };
     defer self.threads.allocator.free(key);
@@ -129,4 +132,45 @@ pub fn completeJob(self: *Self, job: Job) void {
     const keyval = kv.key_ptr.*;
     defer self.threads.allocator.free(keyval);
     self.threads.removeByPtr(kv.key_ptr);
+}
+
+fn testJob(self: *Self, job: Job, some_int: *i64) void {
+    some_int.* = 42;
+    self.completeJob(job);
+}
+
+fn testSleepingJob(self: *Self, job: Job) void {
+    Thread.sleep(std.time.ns_per_s);
+    self.completeJob(job);
+}
+
+test "WorkerPool" {
+    const allocator = std.testing.allocator;
+    var pool = Self.init(allocator);
+    var some_int: i64 = 0;
+
+    const job = Job.init(
+        .{
+            .repository = "test",
+            .version = "latest",
+            .module = "test",
+            .file = "test",
+            .allocator = null,
+        },
+        .SyncLatest,
+    );
+    try pool.addJob(job, Self.testJob, .{ &pool, job, &some_int });
+
+    // Deinit the pool, it should wait for the job to complete
+    pool.deinit();
+    try std.testing.expectEqual(some_int, 42);
+
+    // Try to create duplicate jobs
+    pool = Self.init(allocator);
+    try pool.addJob(job, Self.testSleepingJob, .{ &pool, job });
+    try std.testing.expectError(
+        WorkerError.JobExists,
+        pool.addJob(job, Self.testSleepingJob, .{ &pool, job }),
+    );
+    pool.deinit();
 }
