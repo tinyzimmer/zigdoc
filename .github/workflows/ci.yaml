@@ -15,7 +15,7 @@ env:
 
 jobs:
   tests:
-    name: Run tests
+    name: Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -44,10 +44,6 @@ jobs:
         uses: mlugg/setup-zig@v1
         with:
           version: ${{ env.ZIG_VERSION }}
-
-      - name: Build
-        shell: bash
-        run: zig build
 
       - name: Run Snapshot Release
         uses: goreleaser/goreleaser-action@v6
