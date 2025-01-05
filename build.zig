@@ -54,6 +54,13 @@ pub fn build(b: *std.Build) void {
     });
     exe.root_module.addImport("mustache", mustache.module("mustache"));
 
+    // Add zig-cli as a dependency to the executable.
+    const zig_cli = b.dependency("zig-cli", .{
+        .target = target,
+        .optimize = optimize,
+    });
+    exe.root_module.addImport("zig-cli", zig_cli.module("zig-cli"));
+
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default
     // step when running `zig build`).

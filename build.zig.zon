@@ -35,6 +35,10 @@
             .url = "git+https://github.com/batiati/mustache-zig?ref=master#822933184fb0cbc8e692e9c73618deb2b0b8108c",
             .hash = "122008747b05328191a1b3c2a83520b82f11e87ae12e2cc8f92305792203802a0b02",
         },
+        .@"zig-cli" = .{
+            .url = "git+https://github.com/sam701/zig-cli?ref=main#ac82640e750efb3b89c609032bdec0898739a790",
+            .hash = "1220203f73d7a17299a5d1a2f7902bc1c8ad9d20c8f7c40b4852dfd77bdb6ff7ec5e",
+        },
     },
     .paths = .{
         "build.zig",
