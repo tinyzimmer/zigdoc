@@ -30,6 +30,9 @@ For example, `http://localhost:8080/github.com/karlseguin/http.zig`
 A specific version/branch can be requested by appending `@<version>` to the path.
 This defaults to `latest` while will try to resolve either the newest tag or the latest commit on the default branch.
 
+The list of supported hosts is currently hardcoded to `github.com` and `gitlab.com`.
+This can be expanded as needed in the future, with potential support for vanity URLs.
+
 ## Building
 
 ```sh
