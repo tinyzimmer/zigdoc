@@ -26,6 +26,11 @@ pub fn init(repo: *Repository) Self {
     return .{ .repo = repo };
 }
 
+pub fn checkDocsManifestPopulated(self: *Self, repo_location: RemoteSource) !bool {
+    service_log.debug("Checking documentation manifest for {s}@{s}", .{ repo_location.repository, repo_location.version });
+    return try self.repo.checkDocsManifestPopulated(repo_location);
+}
+
 pub fn getModulesList(self: *Self, allocator: Allocator, source: RemoteSource) ![]const []const u8 {
     service_log.debug("Retrieving docs manifest for repository: {s} version: {s} module: {s} file {s}", .{
         source.repository,

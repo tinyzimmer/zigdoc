@@ -173,16 +173,16 @@ const SubscribeContext = struct {
         defer source.deinit();
         var timer = Timer.start() catch return;
         while (timer.read() < 20 * std.time.ns_per_s) {
-            const modules = self.service.getModulesList(self.arena, source) catch {
+            const ready = self.service.checkDocsManifestPopulated(source) catch {
                 std.Thread.sleep(2 * std.time.ns_per_s);
                 continue;
             };
-            self.arena.free(modules);
-            for (modules) |module| {
-                self.arena.free(module);
+            if (ready) {
+                stream.writeAll("event: ready\ndata:{}\n\n") catch return;
+                return;
+            } else {
+                std.Thread.sleep(2 * std.time.ns_per_s);
             }
-            stream.writeAll("event: ready\ndata:{}\n\n") catch return;
-            return;
         }
     }
 };

@@ -30,7 +30,7 @@ var allocator: std.mem.Allocator = undefined;
 var config = struct {
     host: []const u8 = "::",
     port: u16 = 8080,
-    workers: u16 = 4,
+    http_workers: u16 = 4,
     data_dir: []const u8 = "data",
 }{};
 
@@ -59,9 +59,9 @@ pub fn main() !void {
                     .value_ref = r.mkRef(&config.port),
                 },
                 .{
-                    .long_name = "workers",
-                    .help = "number of worker threads",
-                    .value_ref = r.mkRef(&config.workers),
+                    .long_name = "http-workers",
+                    .help = "number of http worker threads",
+                    .value_ref = r.mkRef(&config.http_workers),
                 },
                 .{
                     .long_name = "data-dir",
@@ -94,7 +94,7 @@ pub fn run_server() !void {
             .port = config.port,
             .address = config.host,
             .workers = .{
-                .count = config.workers,
+                .count = config.http_workers,
             },
         },
         &app,

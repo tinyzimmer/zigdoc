@@ -82,6 +82,13 @@ pub fn getDocsManifest(self: *Self, repo_location: RemoteSource) !Manifest {
     };
 }
 
+pub fn checkDocsManifestPopulated(self: *Self, repo_location: RemoteSource) !bool {
+    repo_log.debug("Checking documentation manifest for {s}@{s}", .{ repo_location.repository, repo_location.version });
+    var manifest = try self.store.openManifest(repo_location);
+    defer manifest.deinit();
+    return manifest.modules.count() > 0;
+}
+
 fn runJob(self: *Self, job: Job) void {
     var j = job;
     defer j.deinit();
