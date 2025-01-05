@@ -10,17 +10,18 @@ const git_log = std.log.scoped(.git);
 allocator: Allocator,
 path: []const u8,
 dir: std.fs.Dir,
+git_executable: []const u8 = "git",
 
 pub const Self = @This();
 
-pub fn init(allocator: Allocator, path: []const u8) !Self {
+pub fn init(allocator: Allocator, git_executable: []const u8, path: []const u8) !Self {
     const dir = std.fs.cwd().openDir(path, .{
         .access_sub_paths = true,
         .iterate = true,
     }) catch {
         return GitError.FilesystemError;
     };
-    return .{ .allocator = allocator, .path = path, .dir = dir };
+    return .{ .allocator = allocator, .path = path, .dir = dir, .git_executable = git_executable };
 }
 
 pub fn deinit(self: *Self) void {
@@ -36,7 +37,7 @@ pub fn clone(self: *Self, repository: []const u8, version: []const u8) GitError!
     const result = ChildProcess.run(.{
         .allocator = self.allocator,
         .argv = &[_][]const u8{
-            "git", "clone", "--depth=1", "--branch", version, repo, ".",
+            self.git_executable, "clone", "--depth=1", "--branch", version, repo, ".",
         },
         .cwd = self.path,
     }) catch {

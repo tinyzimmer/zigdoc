@@ -18,11 +18,10 @@ const Buffer = Storage.Buffer;
 const RemoteSource = @import("remotesource.zig");
 const VersionLatest = RemoteSource.VersionLatest;
 
-const GitTag = @import("git/tag.zig");
-const GitRepo = @import("git/repository.zig");
+const Git = @import("git/git.zig");
 const Manifest = @import("docs.zig").Manifest;
 
-const docs = @import("docs.zig");
+const Docs = @import("docs.zig");
 
 const repo_log = std.log.scoped(.repository);
 
@@ -30,6 +29,10 @@ const repo_log = std.log.scoped(.repository);
 allocator: Allocator,
 /// The backing storage implementation.
 store: *Storage,
+/// The documentation builder
+builder: Docs,
+// Interface for working with git
+git: Git,
 /// The worker pool for running documentation build jobs.
 worker_pool: WorkerPool,
 
@@ -39,10 +42,12 @@ pub const RepositoryError = error{
     QueuedManifestSync,
 };
 
-pub fn init(allocator: Allocator, store: *Storage) Self {
+pub fn init(allocator: Allocator, store: *Storage, builder: Docs, git: Git) Self {
     return .{
         .allocator = allocator,
         .store = store,
+        .builder = builder,
+        .git = git,
         .worker_pool = WorkerPool.init(allocator),
     };
 }
@@ -108,7 +113,7 @@ fn syncLatest(self: *Self, location: RemoteSource) void {
         location.version,
     });
 
-    var tag = GitTag.fetchLatestTag(self.allocator, loc.repository) catch |err| {
+    var tag = self.git.fetchLatestTag(self.allocator, loc.repository) catch |err| {
         repo_log.err("Failed to fetch latest tag for: {s}: {any}", .{ loc.repository, err });
         return;
     };
@@ -164,7 +169,7 @@ fn syncRepositoryDocs(self: *Self, location: RemoteSource) void {
     defer self.allocator.free(tmppath);
     repo_log.debug("Working in temporary directory: {s}", .{tmppath});
 
-    var repo = GitRepo.init(self.allocator, tmppath) catch |err| {
+    var repo = self.git.initRepository(self.allocator, tmppath) catch |err| {
         repo_log.err("Failed to initialize repository: {any}", .{err});
         return;
     };
@@ -191,7 +196,7 @@ fn syncRepositoryDocs(self: *Self, location: RemoteSource) void {
 
     // Build the documentation
     repo_log.info("Building documentation for {s}@{s}", .{ location.repository, location.version });
-    var doc_manifest = docs.build(&repo) catch |err| {
+    var doc_manifest = self.builder.build(&repo) catch |err| {
         repo_log.err("Failed to build documentation for {s}@{s}: {any}", .{ location.repository, location.version, err });
         return;
     };

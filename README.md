@@ -17,7 +17,23 @@ In the future the things requiring these can be moved to native zig code.
 ### Running the server
 
 ```sh
-zigdoc [--host=::] [--port=8080] [--http-workers=4] [--data-dir=./data]
+zigdoc serve [flags]
+
+USAGE:
+  zigdoc [OPTIONS]
+
+COMMANDS:
+  serve
+      --host <VALUE>           host to listen on
+      --port <VALUE>           port to bind to
+      --http-workers <VALUE>   number of http worker threads
+      --data-dir <VALUE>       directory to store data
+
+OPTIONS:
+      --git-executable <VALUE>   path to the git executable (defaults to 'git')
+      --zig-executable <VALUE>   path to the zig executable (defaults to 'zig')
+      --zig-cache-dir <VALUE>    directory to store zig cache, defaults to the global zig cache directory
+  -h, --help                     Show this help output.
 ```
 
 This starts an HTTP server that listens on `0.0.0.0:8080` by default.

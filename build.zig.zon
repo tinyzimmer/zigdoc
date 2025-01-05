@@ -39,6 +39,10 @@
             .url = "git+https://github.com/sam701/zig-cli?ref=main#ac82640e750efb3b89c609032bdec0898739a790",
             .hash = "1220203f73d7a17299a5d1a2f7902bc1c8ad9d20c8f7c40b4852dfd77bdb6ff7ec5e",
         },
+        // .@"egg-zon" = .{
+        //     .url = "git+https://github.com/ziglibs/eggzon?ref=master#5e47ec16b4decb640b00fa8154c412618256dcdc",
+        //     .hash = "1220cd5cec7e9d4911074a9b2dec2dabef76e1adf94d041bca068163ce7666c4be47",
+        // },
     },
     .paths = .{
         "build.zig",

@@ -13,8 +13,8 @@ commit: []const u8,
 
 pub const Self = @This();
 
-pub fn fetchLatestTag(allocator: Allocator, repository: []const u8) GitError!Self {
-    return getLatestTag(allocator, repository);
+pub fn fetchLatestTag(allocator: Allocator, git_executable: []const u8, repository: []const u8) GitError!Self {
+    return getLatestTag(allocator, git_executable, repository);
 }
 
 pub fn deinit(self: *Self) void {
@@ -22,7 +22,7 @@ pub fn deinit(self: *Self) void {
     self.allocator.free(self.commit);
 }
 
-fn getLatestTag(allocator: Allocator, repository: []const u8) GitError!Self {
+fn getLatestTag(allocator: Allocator, git_executable: []const u8, repository: []const u8) GitError!Self {
     const repo = std.fmt.allocPrint(allocator, "https://{s}", .{repository}) catch {
         return GitError.OutOfMemory;
     };
@@ -31,8 +31,8 @@ fn getLatestTag(allocator: Allocator, repository: []const u8) GitError!Self {
     const result = ChildProcess.run(.{
         .allocator = allocator,
         .argv = &[_][]const u8{
-            "git",       "-c",     "versionsort.suffix=-",
-            "ls-remote", "--tags", "--sort=-v:refname",
+            git_executable, "-c",     "versionsort.suffix=-",
+            "ls-remote",    "--tags", "--sort=-v:refname",
             repo,
         },
     }) catch {
@@ -57,7 +57,7 @@ fn getLatestTag(allocator: Allocator, repository: []const u8) GitError!Self {
 
     if (result.stdout.len == 0) {
         // Lookup the default branch and latest commit hash
-        return getDefaultBranch(allocator, repo);
+        return getDefaultBranch(allocator, git_executable, repo);
     }
 
     var lines = std.mem.splitSequence(u8, result.stdout, "\n");
@@ -80,11 +80,11 @@ fn getLatestTag(allocator: Allocator, repository: []const u8) GitError!Self {
     return .{ .allocator = allocator, .tag = outtag, .commit = outcommit };
 }
 
-fn getDefaultBranch(allocator: Allocator, repository_url: []const u8) GitError!Self {
+fn getDefaultBranch(allocator: Allocator, git_executable: []const u8, repository_url: []const u8) GitError!Self {
     const result = ChildProcess.run(.{
         .allocator = allocator,
         .argv = &[_][]const u8{
-            "git", "ls-remote", "--symref", repository_url,
+            git_executable, "ls-remote", "--symref", repository_url,
         },
     }) catch {
         return GitError.GitNotInstalled;

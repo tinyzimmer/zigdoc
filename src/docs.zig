@@ -52,21 +52,37 @@ pub const Manifest = struct {
     }
 };
 
-const build_docs_file = @embedFile("build.docs.zig");
+zig_executable: []const u8 = "zig",
+zig_cache_dir: []const u8 = "",
 
+pub fn init(zig_executable: []const u8, zig_cache_dir: []const u8) Self {
+    return .{ .zig_executable = zig_executable, .zig_cache_dir = zig_cache_dir };
+}
+
+const build_docs_file = @embedFile("build.docs.zig");
 const docs_build_dir = "zig-out/zigdocs";
 
 /// Build the documentation for the repository. The allocator of the repository
 /// is used to allocate memory for the documentation build.
-pub fn build(repo: *GitRepo) !Manifest {
+pub fn build(self: Self, repo: *GitRepo) !Manifest {
     try repo.writeFile("build.docs.zig", build_docs_file);
+
+    var args = ArrayList([]const u8).init(repo.allocator);
+    defer args.deinit();
+    try args.append(self.zig_executable);
+    if (self.zig_cache_dir.len != 0) {
+        try args.append("--global-cache-dir");
+        try args.append(self.zig_cache_dir);
+    }
+    var extra = try args.addManyAsSlice(4);
+    extra[0] = "build";
+    extra[1] = "--build-file";
+    extra[2] = "build.docs.zig";
+    extra[3] = "zigdocs";
+
     const result = ChildProcess.run(.{
         .allocator = repo.allocator,
-        .argv = &[_][]const u8{
-            "zig",          "build",
-            "--build-file", "build.docs.zig",
-            "zigdocs",
-        },
+        .argv = args.items,
         .cwd = repo.path,
     }) catch {
         return DocsError.ZigNotInstalled;
