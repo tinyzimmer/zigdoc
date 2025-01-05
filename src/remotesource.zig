@@ -182,6 +182,10 @@ test "RemoteSource: parse" {
             },
         },
         .{
+            .location = "github.com/org/repo/../",
+            .expected_error = SourceError.InvalidPath,
+        },
+        .{
             .location = "github.com/org/repo/module",
             .expected_source = .{
                 .allocator = allocator,
