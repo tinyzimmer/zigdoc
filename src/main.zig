@@ -51,11 +51,15 @@ pub fn main() !void {
     defer _ = gpa.deinit();
     allocator = gpa.allocator();
 
-    var r = try cli.AppRunner.init(allocator);
+    var arena = std.heap.ArenaAllocator.init(allocator);
+    const arena_allocator = arena.allocator();
+
+    var r = try cli.AppRunner.init(arena_allocator);
+    defer arena.deinit();
 
     // Create an App with a command named "short" that takes host and port options.
     const app = cli.App{
-        .command = cli.Command{
+        .command = .{
             .name = "zigdoc",
             .options = &.{
                 .{
@@ -74,7 +78,7 @@ pub fn main() !void {
                     .value_ref = r.mkRef(&config.global_config.zig_cache_dir),
                 },
             },
-            .target = cli.CommandTarget{
+            .target = .{
                 .subcommands = &.{
                     .{
                         .name = "serve",
@@ -100,8 +104,8 @@ pub fn main() !void {
                                 .value_ref = r.mkRef(&config.serve_config.data_dir),
                             },
                         },
-                        .target = cli.CommandTarget{
-                            .action = cli.CommandAction{
+                        .target = .{
+                            .action = .{
                                 .exec = runServer,
                             },
                         },
