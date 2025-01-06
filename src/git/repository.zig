@@ -2,6 +2,7 @@ const std = @import("std");
 
 const Allocator = std.mem.Allocator;
 const ChildProcess = std.process.Child;
+const EnvMap = std.process.EnvMap;
 
 const GitError = @import("errors.zig").GitError;
 
@@ -36,12 +37,16 @@ pub fn clone(self: *Self, repository: []const u8, version: []const u8) GitError!
     };
     defer self.allocator.free(repo);
 
+    var env_map = EnvMap.init(self.allocator);
+    defer env_map.deinit();
+
     const result = ChildProcess.run(.{
         .allocator = self.allocator,
         .argv = &[_][]const u8{
             self.git_executable, "clone", "--depth=1", "--branch", version, repo, ".",
         },
         .cwd = self.path,
+        .env_map = &env_map,
     }) catch {
         return GitError.GitNotInstalled;
     };

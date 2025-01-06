@@ -2,6 +2,7 @@ const std = @import("std");
 
 const Allocator = std.mem.Allocator;
 const ChildProcess = std.process.Child;
+const EnvMap = std.process.EnvMap;
 
 const GitError = @import("errors.zig").GitError;
 
@@ -29,6 +30,9 @@ fn getLatestTag(allocator: Allocator, git_executable: []const u8, repository: []
     };
     defer allocator.free(repo);
 
+    var env_map = EnvMap.init(allocator);
+    defer env_map.deinit();
+
     const result = ChildProcess.run(.{
         .allocator = allocator,
         .argv = &[_][]const u8{
@@ -36,6 +40,7 @@ fn getLatestTag(allocator: Allocator, git_executable: []const u8, repository: []
             "ls-remote",    "--tags", "--sort=-v:refname",
             repo,
         },
+        .env_map = &env_map,
     }) catch {
         return GitError.GitNotInstalled;
     };
@@ -107,11 +112,14 @@ fn isValidTag(tag: []const u8) bool {
 }
 
 fn getDefaultBranch(allocator: Allocator, git_executable: []const u8, repository_url: []const u8) GitError!Self {
+    var env_map = EnvMap.init(allocator);
+    defer env_map.deinit();
     const result = ChildProcess.run(.{
         .allocator = allocator,
         .argv = &[_][]const u8{
             git_executable, "ls-remote", "--symref", repository_url,
         },
+        .env_map = &env_map,
     }) catch {
         return GitError.GitNotInstalled;
     };

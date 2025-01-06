@@ -6,6 +6,7 @@ const Ast = std.zig.Ast;
 const StringHashMap = std.StringHashMap;
 const ChildProcess = std.process.Child;
 const Dir = std.fs.Dir;
+const EnvMap = std.process.EnvMap;
 
 const GitRepo = @import("git/repository.zig");
 
@@ -73,22 +74,20 @@ pub fn build(self: Self, repo: *GitRepo) !Manifest {
 
     doc_log.debug("Building documentation for module", .{});
     try repo.writeFile("build.docs.zig", build_docs_file);
-    var args = ArrayList([]const u8).init(repo.allocator);
-    defer args.deinit();
-    try args.append(self.zig_executable);
-    try args.append("build");
-    if (self.zig_cache_dir.len != 0) {
-        try args.append("--global-cache-dir");
-        try args.append(self.zig_cache_dir);
-    }
-    try args.append("--build-file");
-    try args.append("build.docs.zig");
-    try args.append("zigdocs");
 
+    var env_map = EnvMap.init(repo.allocator);
+    defer env_map.deinit();
+    if (self.zig_cache_dir.len != 0) {
+        try env_map.put("ZIG_GLOBAL_CACHE_DIR", self.zig_cache_dir);
+        try env_map.put("ZIG_CACHE_DIR", self.zig_cache_dir);
+    }
+
+    const args = [_][]const u8{ self.zig_executable, "build", "--build-file", "build.docs.zig", "zigdocs" };
     const result = ChildProcess.run(.{
         .allocator = repo.allocator,
-        .argv = args.items,
+        .argv = &args,
         .cwd = repo.path,
+        .env_map = &env_map,
     }) catch {
         return DocsError.ZigNotInstalled;
     };
@@ -141,20 +140,25 @@ pub fn build(self: Self, repo: *GitRepo) !Manifest {
 }
 
 fn fetchDependencies(self: Self, repo: *GitRepo) !void {
-    var args = ArrayList([]const u8).init(repo.allocator);
-    defer args.deinit();
-    try args.append(self.zig_executable);
-    try args.append("build");
-    if (self.zig_cache_dir.len != 0) {
-        try args.append("--global-cache-dir");
-        try args.append(self.zig_cache_dir);
-    }
-    try args.append("--fetch");
+    // var args = ArrayList([]const u8).init(repo.allocator);
+    // defer args.deinit();
+    // try args.append(self.zig_executable);
+    // try args.append("build");
+    // try args.append("--fetch");
 
+    var env_map = EnvMap.init(repo.allocator);
+    defer env_map.deinit();
+    if (self.zig_cache_dir.len != 0) {
+        try env_map.put("ZIG_GLOBAL_CACHE_DIR", self.zig_cache_dir);
+        try env_map.put("ZIG_CACHE_DIR", self.zig_cache_dir);
+    }
+
+    const args = [_][]const u8{ self.zig_executable, "build", "--fetch" };
     const result = ChildProcess.run(.{
         .allocator = repo.allocator,
-        .argv = args.items,
+        .argv = &args,
         .cwd = repo.path,
+        .env_map = &env_map,
     }) catch {
         return DocsError.ZigNotInstalled;
     };
