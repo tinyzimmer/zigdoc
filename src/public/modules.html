@@ -24,6 +24,9 @@
         <li><a href="/{{repo}}@{{version}}/{{.}}/">{{.}}</a></li>
         {{/modules}}
       </ul>
+      {{^modules}}
+      No public modules were found in this repository. It could be that the repository only exports private modules or that it doesn't support the zig version running on the server.
+      {{/modules}}
     </div>
   </body>
 </html>
