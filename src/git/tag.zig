@@ -64,8 +64,14 @@ fn getLatestTag(allocator: Allocator, git_executable: []const u8, repository: []
     var lines = std.mem.splitSequence(u8, result.stdout, "\n");
     while (lines.next()) |latest| {
         var parts = std.mem.splitSequence(u8, latest, "\t");
-        const commit = parts.next() orelse return GitError.AbnormalReference;
-        const tagref = parts.next() orelse return GitError.AbnormalReference;
+        const commit = parts.next() orelse {
+            git_log.warn("Failed to parse commit hash: {s}", .{latest});
+            continue;
+        };
+        const tagref = parts.next() orelse {
+            git_log.warn("Failed to parse tag reference: {s}", .{latest});
+            continue;
+        };
         const tag = std.mem.trimLeft(u8, tagref, "refs/tags/");
 
         if (!isValidTag(tag)) {
@@ -75,6 +81,7 @@ fn getLatestTag(allocator: Allocator, git_executable: []const u8, repository: []
         var outtag = allocator.alloc(u8, tag.len) catch {
             return GitError.OutOfMemory;
         };
+        errdefer allocator.free(outtag);
         @memcpy(outtag[0..], tag);
         var outcommit = allocator.alloc(u8, commit.len) catch {
             return GitError.OutOfMemory;
