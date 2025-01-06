@@ -141,18 +141,16 @@ pub fn build(self: Self, repo: *GitRepo) !Manifest {
 }
 
 fn fetchDependencies(self: Self, repo: *GitRepo) void {
-    const urls = self.getDependencyURLs(repo) catch {
+    const deps = self.getDependencies(repo) catch {
         // Don't make this fatal, just let getDependencyURLs log the error.
         return;
     };
-    if (urls != null) {
-        defer urls.?.deinit();
-        for (urls.?.items) |url| {
-            defer repo.allocator.free(url);
-            // Ignore the hash part of the URL.
-            var parts = std.mem.splitSequence(u8, url, "#");
-            const dep_url = parts.next() orelse continue;
-            self.fetchDependency(repo, dep_url) catch {
+    if (deps != null) {
+        defer deps.?.deinit();
+        for (deps.?.items) |dep| {
+            defer repo.allocator.free(dep.url);
+            defer repo.allocator.free(dep.hash);
+            self.fetchDependency(repo, dep) catch {
                 // Don't make this fatal, just let fetchDependency log the error.
                 continue;
             };
@@ -160,11 +158,15 @@ fn fetchDependencies(self: Self, repo: *GitRepo) void {
     }
 }
 
-fn fetchDependency(self: Self, repo: *GitRepo, url: []const u8) !void {
+fn fetchDependency(self: Self, repo: *GitRepo, dep: Dependency) !void {
     var args = ArrayList([]const u8).init(repo.allocator);
     defer args.deinit();
 
-    doc_log.debug("Fetching dependency: {s}", .{url});
+    // Ignore the hash part of the URL.
+    var parts = std.mem.splitSequence(u8, dep.url, "#");
+    const dep_url = parts.next() orelse return;
+
+    doc_log.debug("Fetching dependency: {s}", .{dep_url});
 
     try args.append(self.zig_executable);
     try args.append("fetch");
@@ -172,7 +174,7 @@ fn fetchDependency(self: Self, repo: *GitRepo, url: []const u8) !void {
         try args.append("--global-cache-dir");
         try args.append(self.zig_cache_dir);
     }
-    try args.append(url);
+    try args.append(dep_url);
 
     const result = ChildProcess.run(.{
         .allocator = repo.allocator,
@@ -195,7 +197,12 @@ fn fetchDependency(self: Self, repo: *GitRepo, url: []const u8) !void {
     }
 }
 
-fn getDependencyURLs(self: Self, repo: *GitRepo) DocsError!?std.ArrayList([]u8) {
+const Dependency = struct {
+    url: []u8,
+    hash: []u8,
+};
+
+fn getDependencies(self: Self, repo: *GitRepo) DocsError!?std.ArrayList(Dependency) {
     const zon_file = repo.dir.readFileAllocOptions(
         repo.allocator,
         "build.zig.zon",
@@ -224,7 +231,7 @@ fn getDependencyURLs(self: Self, repo: *GitRepo) DocsError!?std.ArrayList([]u8) 
     return self.dependenciesFromZonAst(repo, ast);
 }
 
-fn dependenciesFromZonAst(self: Self, repo: *GitRepo, ast: Ast) DocsError!?std.ArrayList([]u8) {
+fn dependenciesFromZonAst(self: Self, repo: *GitRepo, ast: Ast) DocsError!?std.ArrayList(Dependency) {
     const node_tags = ast.nodes.items(.tag);
     const node_datas = ast.nodes.items(.data);
     if (node_tags[0] != .root) {
@@ -246,29 +253,41 @@ fn dependenciesFromZonAst(self: Self, repo: *GitRepo, ast: Ast) DocsError!?std.A
     return null;
 }
 
-fn parseDependencies(self: Self, repo: *GitRepo, ast: Ast, node: Ast.Node.Index) DocsError!?std.ArrayList([]u8) {
+fn parseDependencies(self: Self, repo: *GitRepo, ast: Ast, node: Ast.Node.Index) DocsError!?std.ArrayList(Dependency) {
     var buf: [2]Ast.Node.Index = undefined;
     const struct_init = ast.fullStructInit(&buf, node) orelse {
         return DocsError.InvalidZonFile;
     };
-    var urls = std.ArrayList([]u8).init(repo.allocator);
+    var urls = std.ArrayList(Dependency).init(repo.allocator);
     for (struct_init.ast.fields) |field_init| {
         // const name_token = ast.firstToken(field_init) - 2;
         // const dep_name = ast.tokenSlice(name_token);
         const dep_url = try self.parseDependencyURL(ast, field_init);
-        if (dep_url != null) {
-            // Trim leading and trailing quotes.
-            const trimmed = std.mem.trim(u8, dep_url.?, "\"");
-            // Make a copy of the URL so it can be stored in the list.
-            var url = repo.allocator.alloc(u8, trimmed.len) catch {
-                return DocsError.OutOfMemory;
-            };
-            errdefer repo.allocator.free(url);
-            @memcpy(url[0..], trimmed);
-            urls.append(url) catch {
-                return DocsError.OutOfMemory;
-            };
+        if (dep_url == null) {
+            doc_log.warn("Dependency missing URL", .{});
+            continue;
         }
+        const dep_hash = try self.parseDependencyHash(ast, field_init);
+        if (dep_hash == null) {
+            doc_log.warn("Dependency missing hash", .{});
+            continue;
+        }
+        // Trim leading and trailing quotes.
+        const trimmed = std.mem.trim(u8, dep_url.?, "\"");
+        // Make a copy of the URL so it can be stored in the list.
+        var url = repo.allocator.alloc(u8, trimmed.len) catch {
+            return DocsError.OutOfMemory;
+        };
+        errdefer repo.allocator.free(url);
+        var hash = repo.allocator.alloc(u8, dep_hash.?.len) catch {
+            return DocsError.OutOfMemory;
+        };
+        errdefer repo.allocator.free(hash);
+        @memcpy(url[0..], trimmed);
+        @memcpy(hash[0..], dep_hash.?);
+        urls.append(Dependency{ .url = url, .hash = hash }) catch {
+            return DocsError.OutOfMemory;
+        };
     }
     return urls;
 }
@@ -282,6 +301,28 @@ fn parseDependencyURL(_: Self, ast: Ast, node: Ast.Node.Index) DocsError!?[]cons
         const name_token = ast.firstToken(field_init) - 2;
         const field_name = ast.tokenSlice(name_token);
         if (std.mem.eql(u8, field_name, "url")) {
+            const node_tags = ast.nodes.items(.tag);
+            const main_tokens = ast.nodes.items(.main_token);
+            if (node_tags[field_init] != .string_literal) {
+                return DocsError.InvalidZonFile;
+            }
+            const str_lit_token = main_tokens[field_init];
+            const value = ast.tokenSlice(str_lit_token);
+            return value;
+        }
+    }
+    return null;
+}
+
+fn parseDependencyHash(_: Self, ast: Ast, node: Ast.Node.Index) DocsError!?[]const u8 {
+    var buf: [2]Ast.Node.Index = undefined;
+    const struct_init = ast.fullStructInit(&buf, node) orelse {
+        return DocsError.InvalidZonFile;
+    };
+    for (struct_init.ast.fields) |field_init| {
+        const name_token = ast.firstToken(field_init) - 2;
+        const field_name = ast.tokenSlice(name_token);
+        if (std.mem.eql(u8, field_name, "hash")) {
             const node_tags = ast.nodes.items(.tag);
             const main_tokens = ast.nodes.items(.main_token);
             if (node_tags[field_init] != .string_literal) {

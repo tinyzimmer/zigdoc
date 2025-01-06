@@ -62,23 +62,37 @@ fn getLatestTag(allocator: Allocator, git_executable: []const u8, repository: []
     }
 
     var lines = std.mem.splitSequence(u8, result.stdout, "\n");
-    const latest = lines.next() orelse return GitError.AbnormalReference;
+    while (lines.next()) |latest| {
+        var parts = std.mem.splitSequence(u8, latest, "\t");
+        const commit = parts.next() orelse return GitError.AbnormalReference;
+        const tagref = parts.next() orelse return GitError.AbnormalReference;
+        const tag = std.mem.trimLeft(u8, tagref, "refs/tags/");
 
-    var parts = std.mem.splitSequence(u8, latest, "\t");
-    const commit = parts.next() orelse return GitError.AbnormalReference;
-    const tagref = parts.next() orelse return GitError.AbnormalReference;
-    const tag = std.mem.trimLeft(u8, tagref, "refs/tags/");
+        if (!isValidTag(tag)) {
+            continue;
+        }
 
-    var outtag = allocator.alloc(u8, tag.len) catch {
-        return GitError.OutOfMemory;
-    };
-    @memcpy(outtag[0..], tag);
-    var outcommit = allocator.alloc(u8, commit.len) catch {
-        return GitError.OutOfMemory;
-    };
-    @memcpy(outcommit[0..], commit);
+        var outtag = allocator.alloc(u8, tag.len) catch {
+            return GitError.OutOfMemory;
+        };
+        @memcpy(outtag[0..], tag);
+        var outcommit = allocator.alloc(u8, commit.len) catch {
+            return GitError.OutOfMemory;
+        };
+        @memcpy(outcommit[0..], commit);
 
-    return .{ .allocator = allocator, .tag = outtag, .commit = outcommit };
+        return .{ .allocator = allocator, .tag = outtag, .commit = outcommit };
+    }
+
+    // None of the tags were valid, fall back to default branch
+    return getDefaultBranch(allocator, git_executable, repo);
+}
+
+fn isValidTag(tag: []const u8) bool {
+    if (std.mem.startsWith(u8, tag, "v")) return true;
+    // Check if the first character is a digit
+    if (tag[0] >= '0' and tag[0] <= '9') return true;
+    return false;
 }
 
 fn getDefaultBranch(allocator: Allocator, git_executable: []const u8, repository_url: []const u8) GitError!Self {
