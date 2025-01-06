@@ -69,15 +69,10 @@ const docs_build_dir = "zig-out/zigdocs";
 pub fn build(self: Self, repo: *GitRepo) !Manifest {
     // First check for any dependencies that need to be fetched.
     doc_log.debug("Fetching dependencies for module", .{});
-    self.fetchDependencies(repo) catch |err| {
-        doc_log.err("Failed to fetch dependencies for module: {any}", .{err});
-        return err;
-    };
+    self.fetchDependencies(repo);
 
     doc_log.debug("Building documentation for module", .{});
-
     try repo.writeFile("build.docs.zig", build_docs_file);
-
     var args = ArrayList([]const u8).init(repo.allocator);
     defer args.deinit();
     try args.append(self.zig_executable);
@@ -145,7 +140,7 @@ pub fn build(self: Self, repo: *GitRepo) !Manifest {
     return Manifest.init(repo.allocator, modules);
 }
 
-fn fetchDependencies(self: Self, repo: *GitRepo) !void {
+fn fetchDependencies(self: Self, repo: *GitRepo) void {
     const urls = self.getDependencyURLs(repo) catch {
         // Don't make this fatal, just let getDependencyURLs log the error.
         return;
