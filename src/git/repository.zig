@@ -14,6 +14,7 @@ git_executable: []const u8 = "git",
 
 pub const Self = @This();
 
+/// Initialize the git interface with the given allocator and working directory.
 pub fn init(allocator: Allocator, git_executable: []const u8, path: []const u8) !Self {
     const dir = std.fs.cwd().openDir(path, .{
         .access_sub_paths = true,
@@ -28,6 +29,7 @@ pub fn deinit(self: *Self) void {
     self.dir.close();
 }
 
+/// Clone a repository to the working directory.
 pub fn clone(self: *Self, repository: []const u8, version: []const u8) GitError!void {
     const repo = std.fmt.allocPrint(self.allocator, "https://{s}", .{repository}) catch {
         return GitError.OutOfMemory;
@@ -61,6 +63,7 @@ pub fn clone(self: *Self, repository: []const u8, version: []const u8) GitError!
     }
 }
 
+/// Write a file to the working directory.
 pub fn writeFile(self: *Self, path: []const u8, contents: []const u8) GitError!void {
     const file = self.dir.createFile(path, .{
         .exclusive = true,

@@ -21,6 +21,8 @@ pub const JobType = enum {
     SyncRepository,
 };
 
+/// A job to be run by the worker pool. This structure is mainly used for
+/// acting as the "key" to the worker pool hashmap.
 pub const Job = struct {
     location: RemoteSource,
     job_type: JobType,
@@ -78,6 +80,7 @@ pub fn deinit(self: *Self) void {
     }
 }
 
+/// Adds a job to the worker pool.
 pub fn addJob(self: *Self, job: Job, comptime function: anytype, args: anytype) WorkerError!void {
     self.mutex.lock();
     defer self.mutex.unlock();
@@ -110,6 +113,7 @@ pub fn addJob(self: *Self, job: Job, comptime function: anytype, args: anytype) 
     };
 }
 
+/// Can be called by a job to indicate that it has completed.
 pub fn completeJob(self: *Self, job: Job) void {
     self.mutex.lock();
     defer self.mutex.unlock();

@@ -26,11 +26,13 @@ pub fn init(repo: *Repository) Self {
     return .{ .repo = repo };
 }
 
+/// Check if the documentation manifest for a repository is populated.
 pub fn checkDocsManifestPopulated(self: *Self, repo_location: RemoteSource) !bool {
     service_log.debug("Checking documentation manifest for {s}@{s}", .{ repo_location.repository, repo_location.version });
     return try self.repo.checkDocsManifestPopulated(repo_location);
 }
 
+/// Retrieve the list of modules for a given repository.
 pub fn getModulesList(self: *Self, allocator: Allocator, source: RemoteSource) ![]const []const u8 {
     service_log.debug("Retrieving docs manifest for repository: {s} version: {s} module: {s} file {s}", .{
         source.repository,
@@ -58,6 +60,7 @@ pub fn getModulesList(self: *Self, allocator: Allocator, source: RemoteSource) !
     return arr.toOwnedSlice();
 }
 
+/// Retrieve a specific file from the documentation manifest for a repository.
 pub fn getDocsResource(self: *Self, _: Allocator, source: RemoteSource) !Buffer {
     service_log.debug("Retrieving docs for repository: {s} version: {s} module: {s} file {s}", .{
         source.repository,

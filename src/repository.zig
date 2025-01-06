@@ -56,6 +56,7 @@ pub fn deinit(self: *Self) void {
     self.worker_pool.deinit();
 }
 
+/// Retrieve the documentation manifest for a given repository location.
 pub fn getDocsManifest(self: *Self, repo_location: RemoteSource) !Manifest {
     var loc = repo_location;
     repo_log.debug("Fetching documentation manifest for {s}@{s}", .{ loc.repository, loc.version });
@@ -87,6 +88,8 @@ pub fn getDocsManifest(self: *Self, repo_location: RemoteSource) !Manifest {
     };
 }
 
+/// Retrieve the documentation manifest for a given repository location and verify that it is populated
+/// with at least one module.
 pub fn checkDocsManifestPopulated(self: *Self, repo_location: RemoteSource) !bool {
     repo_log.debug("Checking documentation manifest for {s}@{s}", .{ repo_location.repository, repo_location.version });
     var manifest = try self.store.openManifest(repo_location);

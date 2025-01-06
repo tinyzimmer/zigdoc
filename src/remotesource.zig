@@ -14,11 +14,16 @@ const Self = @This();
 
 allocator: ?std.mem.Allocator = null,
 
+/// The repository URL.
 repository: []const u8,
+/// The version of the repository.
 version: []const u8,
+/// The module path.
 module: []const u8,
+/// The file path corresponding to a resource in the generated documentation.
 file: []const u8,
 
+/// Parse a remote source path into a `RemoteSource`.
 pub fn parse(allocator: std.mem.Allocator, path: []const u8) SourceError!Self {
     // Check for directory traversal
     try checkDirTraversal(path);
@@ -101,6 +106,7 @@ pub fn deinit(self: *Self) void {
     }
 }
 
+// Take a shallow clone of the source, copying the allocator.
 pub fn shallowClone(self: *Self) Self {
     return .{
         .allocator = self.allocator,
@@ -111,6 +117,7 @@ pub fn shallowClone(self: *Self) Self {
     };
 }
 
+// Take a shallow clone of the source, copying the allocator but overriding the version.
 pub fn shallowCloneWithVersion(self: *Self, version: []const u8) Self {
     return .{
         .allocator = self.allocator,
@@ -121,6 +128,7 @@ pub fn shallowCloneWithVersion(self: *Self, version: []const u8) Self {
     };
 }
 
+// Use allocator to clone the source. Optionally replace the version with the provided override.
 pub fn clone(self: *Self, allocator: std.mem.Allocator, version_override: ?[]const u8) !Self {
     var repo = try allocator.alloc(u8, self.repository.len);
     errdefer allocator.free(repo);

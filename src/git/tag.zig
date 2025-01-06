@@ -13,6 +13,7 @@ commit: []const u8,
 
 pub const Self = @This();
 
+/// Lookup the latest tag for a given repository. If no tags exist, the default branch and latest commit hash are returned.
 pub fn fetchLatestTag(allocator: Allocator, git_executable: []const u8, repository: []const u8) GitError!Self {
     return getLatestTag(allocator, git_executable, repository);
 }

@@ -29,6 +29,7 @@ const css_data = @embedFile("public/style.css");
 allocator: Allocator,
 service: *Service,
 
+/// Main dispatcher for the server.
 pub fn dispatch(self: *Self, action: httpz.Action(*RequestContext), req: *httpz.Request, res: *httpz.Response) !void {
     var timer = try Timer.start();
 
@@ -53,6 +54,8 @@ pub fn dispatch(self: *Self, action: httpz.Action(*RequestContext), req: *httpz.
     };
 }
 
+/// This function is called when an error is not caught by the dispatcher. It should be turned
+/// into an error page at some point.
 pub fn uncaughtError(_: *Self, _: *httpz.Request, res: *httpz.Response, err: anyerror) void {
     // Assume a 500 error by default
     res.status = 500;
@@ -75,6 +78,7 @@ pub fn uncaughtError(_: *Self, _: *httpz.Request, res: *httpz.Response, err: any
     };
 }
 
+/// Home page handler.
 pub fn index(ctx: *RequestContext, req: *httpz.Request, res: *httpz.Response) !void {
     res.status = 200;
     res.header("Content-Type", "text/html");
@@ -85,6 +89,12 @@ pub fn index(ctx: *RequestContext, req: *httpz.Request, res: *httpz.Response) !v
     }, res.writer());
 }
 
+/// Handler for anything after the root path (besides the sse subscribe handler). If the path
+/// requests just a repository, it will return the list of modules in that repository. If the path
+/// requests a specific module, it will return the documentation for that module.
+///
+/// If a job had to be queued to build documentation, a "queued" page will be returned that subscribes
+/// to the server-sent events endpoint.
 pub fn getDocs(ctx: *RequestContext, req: *httpz.Request, res: *httpz.Response) !void {
     const location = trimPath(req.url.path);
     var source = try RemoteSource.parse(ctx.arena, location);
@@ -159,6 +169,8 @@ pub fn getDocs(ctx: *RequestContext, req: *httpz.Request, res: *httpz.Response) 
     }
 }
 
+/// Subscribe SSE context. It polls the service for the manifest to be populated and sends an event
+/// when it is ready.
 const SubscribeContext = struct {
     arena: Allocator,
     service: *Service,
@@ -187,6 +199,7 @@ const SubscribeContext = struct {
     }
 };
 
+/// Subscribe to server-sent events for a specific repository.
 pub fn subscribeDocs(ctx: *RequestContext, req: *httpz.Request, res: *httpz.Response) !void {
     try res.startEventStream(SubscribeContext{
         .arena = ctx.allocator,
