@@ -156,7 +156,7 @@ fn fetchDependencies(self: Self, repo: *GitRepo) !void {
             defer repo.allocator.free(url);
             // Ignore the hash part of the URL.
             var parts = std.mem.splitSequence(u8, url, "#");
-            const dep_url = parts.next() orelse return;
+            const dep_url = parts.next() orelse continue;
             self.fetchDependency(repo, dep_url) catch {
                 // Don't make this fatal, just let fetchDependency log the error.
                 continue;
