@@ -63,6 +63,10 @@ fn getLatestTag(allocator: Allocator, git_executable: []const u8, repository: []
 
     var lines = std.mem.splitSequence(u8, result.stdout, "\n");
     while (lines.next()) |latest| {
+        if (latest.len == 0) {
+            // We probably hit the end of the list
+            continue;
+        }
         var parts = std.mem.splitSequence(u8, latest, "\t");
         const commit = parts.next() orelse {
             git_log.warn("Failed to parse commit hash: {s}", .{latest});
