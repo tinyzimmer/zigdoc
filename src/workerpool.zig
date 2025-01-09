@@ -1,11 +1,10 @@
 const std = @import("std");
-
-const RemoteSource = @import("remotesource.zig");
-
 const Allocator = std.mem.Allocator;
 const StringHashMap = std.StringHashMap;
 const Thread = std.Thread;
 const Mutex = Thread.Mutex;
+
+const RemoteSource = @import("remotesource.zig");
 
 const worker_log = std.log.scoped(.worker_pool);
 

@@ -1,14 +1,12 @@
 const std = @import("std");
-
 const Allocator = std.mem.Allocator;
 
+const RemoteSource = @import("remotesource.zig");
+const VersionLatest = RemoteSource.VersionLatest;
 const Repository = @import("repository.zig");
 const RepositoryError = Repository.RepositoryError;
-const RemoteSource = @import("remotesource.zig");
 const storage = @import("storage.zig");
-
 const Buffer = storage.Buffer;
-const VersionLatest = RemoteSource.VersionLatest;
 
 const service_log = std.log.scoped(.service);
 

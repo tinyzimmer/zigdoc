@@ -1,17 +1,15 @@
 const std = @import("std");
-
 const Allocator = std.mem.Allocator;
 const Dir = std.fs.Dir;
 const File = std.fs.File;
 const ReadLinkError = std.posix.ReadLinkError;
 const StringHashMap = std.StringHashMap;
 
-const Buffer = @import("buffer.zig");
-const RemoteSource = @import("../remotesource.zig");
 const Manifest = @import("../docs.zig").Manifest;
-
-const StorageError = @import("errors.zig").StorageError;
+const RemoteSource = @import("../remotesource.zig");
 const VersionLatest = RemoteSource.VersionLatest;
+const Buffer = @import("buffer.zig");
+const StorageError = @import("errors.zig").StorageError;
 
 const local_dir_log = std.log.scoped(.local_dir);
 

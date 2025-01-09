@@ -1,13 +1,13 @@
 const std = @import("std");
-const httpz = @import("httpz");
-const mustache = @import("mustache");
-
 const Allocator = std.mem.Allocator;
 const Timer = std.time.Timer;
 
+const httpz = @import("httpz");
+const mustache = @import("mustache");
+
 const RemoteSource = @import("remotesource.zig");
-const Service = @import("service.zig");
 const SourceError = RemoteSource.SourceError;
+const Service = @import("service.zig");
 const ServiceError = Service.ServiceError;
 
 const Self = @This();

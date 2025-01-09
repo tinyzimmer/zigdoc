@@ -1,5 +1,4 @@
 const std = @import("std");
-
 const Allocator = std.mem.Allocator;
 const File = std.fs.File;
 const FixedBufferStream = std.io.FixedBufferStream;

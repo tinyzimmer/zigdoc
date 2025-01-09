@@ -1,5 +1,4 @@
 const std = @import("std");
-
 const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 const Ast = std.zig.Ast;
@@ -140,12 +139,6 @@ pub fn build(self: Self, repo: *GitRepo) !Manifest {
 }
 
 fn fetchDependencies(self: Self, repo: *GitRepo) !void {
-    // var args = ArrayList([]const u8).init(repo.allocator);
-    // defer args.deinit();
-    // try args.append(self.zig_executable);
-    // try args.append("build");
-    // try args.append("--fetch");
-
     var env_map = EnvMap.init(repo.allocator);
     defer env_map.deinit();
     if (self.zig_cache_dir.len != 0) {

@@ -1,11 +1,9 @@
 const std = @import("std");
-
 const Allocator = std.mem.Allocator;
 
+const GitError = @import("errors.zig").GitError;
 const Repository = @import("repository.zig");
 const Tag = @import("tag.zig");
-
-const GitError = @import("errors.zig").GitError;
 
 const Self = @This();
 

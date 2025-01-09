@@ -1,14 +1,14 @@
 const std = @import("std");
-const httpz = @import("httpz");
-
 const Allocator = std.mem.Allocator;
 
-pub const Buffer = @import("storage/buffer.zig");
-pub const StorageError = @import("storage/errors.zig").StorageError;
-const LocalDir = @import("storage/localdir.zig");
+const httpz = @import("httpz");
+
 const Manifest = @import("docs.zig").Manifest;
 const RemoteSource = @import("remotesource.zig");
 const VersionLatest = RemoteSource.VersionLatest;
+pub const Buffer = @import("storage/buffer.zig");
+pub const StorageError = @import("storage/errors.zig").StorageError;
+const LocalDir = @import("storage/localdir.zig");
 
 const storage_log = std.log.scoped(.storage);
 

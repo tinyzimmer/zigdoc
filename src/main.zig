@@ -6,7 +6,13 @@ const builtin = @import("builtin");
 const cli = @import("zig-cli");
 const httpz = @import("httpz");
 
+const App = @import("app.zig");
+const Docs = @import("docs.zig");
+const Git = @import("git/git.zig");
 const logging = @import("logging.zig");
+const Repository = @import("repository.zig");
+const Service = @import("service.zig");
+const Storage = @import("storage.zig");
 
 pub const std_options = std.Options{
     .logFn = logging.logFn,
@@ -15,13 +21,6 @@ pub const std_options = std.Options{
         .ReleaseSafe, .ReleaseFast, .ReleaseSmall => .info,
     },
 };
-
-const App = @import("app.zig");
-const Docs = @import("docs.zig");
-const Git = @import("git/git.zig");
-const Repository = @import("repository.zig");
-const Service = @import("service.zig");
-const Storage = @import("storage.zig");
 
 const main_log = std.log.scoped(.main);
 

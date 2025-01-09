@@ -1,15 +1,6 @@
-// in your build.zig, you can specify a custom test runner:
-// const tests = b.addTest(.{
-//   .target = target,
-//   .optimize = optimize,
-//   .test_runner = "test_runner.zig", // add this line
-//   .root_source_file = b.path("src/main.zig"),
-// });
-
 const std = @import("std");
-const builtin = @import("builtin");
-
 const Allocator = std.mem.Allocator;
+const builtin = @import("builtin");
 
 const BORDER = "=" ** 80;
 

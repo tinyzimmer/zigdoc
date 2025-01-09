@@ -5,23 +5,18 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 
+const Docs = @import("docs.zig");
+const Git = @import("git/git.zig");
+const Manifest = @import("docs.zig").Manifest;
+const RemoteSource = @import("remotesource.zig");
+const VersionLatest = RemoteSource.VersionLatest;
+const Storage = @import("storage.zig");
+const StorageError = Storage.StorageError;
+const Buffer = Storage.Buffer;
+const TempDir = @import("storage/temp.zig").TempDir;
 const WorkerPool = @import("workerpool.zig");
 const Job = WorkerPool.Job;
 const WorkerError = WorkerPool.WorkerError;
-
-const Storage = @import("storage.zig");
-const TempDir = @import("storage/temp.zig").TempDir;
-
-const StorageError = Storage.StorageError;
-const Buffer = Storage.Buffer;
-
-const RemoteSource = @import("remotesource.zig");
-const VersionLatest = RemoteSource.VersionLatest;
-
-const Git = @import("git/git.zig");
-const Manifest = @import("docs.zig").Manifest;
-
-const Docs = @import("docs.zig");
 
 const repo_log = std.log.scoped(.repository);
 
